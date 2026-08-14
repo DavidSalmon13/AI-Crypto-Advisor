@@ -71,11 +71,19 @@ export function DashboardPage() {
         )}
 
         {data && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <CoinPricesSection coinPrices={data.coinPrices} />
-            <MarketNewsSection marketNews={data.marketNews} />
-            <AiInsightSection aiInsight={data.aiInsight} />
-            <MemeSection meme={data.meme} />
+          // Two independent columns rather than one four-cell grid: grid cells stretch to
+          // match the tallest sibling in their row, which left Coin Prices as a tall empty
+          // card beside the ten-item news list. The split also balances height — the three
+          // compact sections together come out close to the news list on their own.
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <div className="flex flex-col gap-6">
+              <CoinPricesSection coinPrices={data.coinPrices} />
+              <AiInsightSection aiInsight={data.aiInsight} />
+              <MemeSection meme={data.meme} />
+            </div>
+            <div className="flex flex-col gap-6">
+              <MarketNewsSection marketNews={data.marketNews} />
+            </div>
           </div>
         )}
       </div>
