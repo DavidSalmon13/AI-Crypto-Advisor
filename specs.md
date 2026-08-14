@@ -313,7 +313,7 @@ The assignment's onboarding question ("What kind of content would you like to se
 
 ### 7.1 AI Insight of the Day — generation
 
-Triggered lazily on cache miss (§4.3). Model: `OPENROUTER_MODEL` env var, default `meta-llama/llama-3.1-8b-instruct:free`. Endpoint: `POST https://openrouter.ai/api/v1/chat/completions`, `Authorization: Bearer ${OPENROUTER_API_KEY}`, timeout 10s, `max_tokens` 220.
+Triggered lazily on cache miss (§4.3). Model: `OPENROUTER_MODEL` env var, default `poolside/laguna-xs-2.1:free` (a reasoning model — its hidden chain-of-thought counts against `max_tokens`, hence the higher budget below). Endpoint: `POST https://openrouter.ai/api/v1/chat/completions`, `Authorization: Bearer ${OPENROUTER_API_KEY}`, timeout 10s, `max_tokens` 600.
 
 Prompt (constructed server-side, not user-editable):
 ```
@@ -412,7 +412,7 @@ sequenceDiagram
 | `DATABASE_URL` | Injected by Railway Postgres plugin |
 | `JWT_SECRET` | ≥32-byte random string for HS256 signing |
 | `OPENROUTER_API_KEY` | OpenRouter free-tier key |
-| `OPENROUTER_MODEL` | default `meta-llama/llama-3.1-8b-instruct:free` |
+| `OPENROUTER_MODEL` | default `poolside/laguna-xs-2.1:free` |
 | `FRONTEND_ORIGIN` | exact Netlify URL, for CORS allow-list |
 | `PORT` | injected by Railway; Spring Boot binds to it automatically |
 
