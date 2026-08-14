@@ -23,9 +23,7 @@ app:
   coingecko:
     base-url: https://api.coingecko.com/api/v3
     timeout-seconds: 5
-  cryptocompare:
-    base-url: https://min-api.cryptocompare.com
-    api-key: ${CRYPTOCOMPARE_API_KEY:}
+  news:
     timeout-seconds: 5
   openrouter:
     base-url: https://openrouter.ai/api/v1

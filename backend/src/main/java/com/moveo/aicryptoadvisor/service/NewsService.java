@@ -2,8 +2,8 @@ package com.moveo.aicryptoadvisor.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moveo.aicryptoadvisor.client.CryptoCompareClient;
 import com.moveo.aicryptoadvisor.client.NewsArticle;
+import com.moveo.aicryptoadvisor.client.RssNewsClient;
 import com.moveo.aicryptoadvisor.config.CacheConfig;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,11 +35,11 @@ public class NewsService {
     public record NewsResult(List<NewsArticle> articles, boolean fallback) {
     }
 
-    private final CryptoCompareClient cryptoCompareClient;
+    private final RssNewsClient rssNewsClient;
     private final List<NewsArticle> fallbackArticles;
 
-    public NewsService(CryptoCompareClient cryptoCompareClient, ObjectMapper objectMapper) {
-        this.cryptoCompareClient = cryptoCompareClient;
+    public NewsService(RssNewsClient rssNewsClient, ObjectMapper objectMapper) {
+        this.rssNewsClient = rssNewsClient;
         try (InputStream in = new ClassPathResource("data/news-fallback.json").getInputStream()) {
             this.fallbackArticles = List.copyOf(objectMapper.readValue(in, new TypeReference<List<NewsArticle>>() {
             }));
@@ -55,14 +55,14 @@ public class NewsService {
     @Cacheable(cacheNames = CacheConfig.MARKET_NEWS_CACHE, key = CACHE_KEY, unless = "#result.fallback()")
     public NewsResult getTopNews() {
         try {
-            List<NewsArticle> articles = cryptoCompareClient.fetchLatestNews();
+            List<NewsArticle> articles = rssNewsClient.fetchLatestNews();
             if (articles.isEmpty()) {
-                log.warn("CryptoCompare returned zero articles — serving static fallback news");
+                log.warn("RSS news feeds returned zero articles — serving static fallback news");
                 return new NewsResult(fallbackArticles, true);
             }
             return new NewsResult(articles.stream().limit(NEWS_LIMIT).toList(), false);
         } catch (RuntimeException e) {
-            log.warn("CryptoCompare news fetch failed — serving static fallback news", e);
+            log.warn("RSS news fetch failed — serving static fallback news", e);
             return new NewsResult(fallbackArticles, true);
         }
     }
