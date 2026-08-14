@@ -1,88 +1,121 @@
 # AI Usage
 
-This project was built with Claude Code (Anthropic) across multiple sessions, from initial
-planning through live deployment. This is a genuine account of how it was used, including
-where the AI got things wrong and had to be corrected — not a sanitized summary.
+I built this project using Claude Code (Anthropic) as my primary AI collaborator, across
+multiple sessions from initial planning through live deployment and post-launch fixes. I
+drove the direction throughout — I decided what to build, reviewed what came back, tested it
+myself before trusting it, and I'm the one accountable for everything that ended up in this
+repo. This is a genuine account of that process, including the places I let AI get things
+wrong and had to step in and correct it — not a sanitized summary.
 
-## Planning
+## How I worked
 
-`specs.md` (full technical spec — API contracts, schema, orchestration logic, deployment plan)
-and `plan.md` (phased build sequence) were drafted collaboratively with Claude Code before any
-code was written. The plan deliberately used vertical slices (Auth → Onboarding → Dashboard →
-Feedback → CI → Deployment) so each phase shipped something demoable and integration problems
-(auth headers, CORS, DTO mismatches) would surface early instead of in one large final pass.
+I had Claude Code draft `specs.md` (API contracts, schema, orchestration logic, deployment
+plan) and `plan.md` (phased build sequence) with me before any code was written, and I read
+and adjusted both — in particular, the assignment brief left real ambiguity (whether the
+4 dashboard sections should be gated by content-type preference, whether every section needs
+voting, how "dynamic" the meme should be), and I made the calls on how to resolve each one
+rather than accepting the first interpretation offered.
 
-## Implementation (Phases 0-7)
+I chose to build in vertical slices (Auth → Onboarding → Dashboard → Feedback → CI →
+Deployment) specifically so I'd catch integration problems — auth headers, CORS, DTO
+mismatches — early, phase by phase, instead of in one large final integration pass. I set the
+acceptance bar for each phase myself (curl checks, JUnit tests, or a manual pass in a real
+browser) and didn't move on until I'd verified it, not just read a summary claiming it worked.
 
-Backend (Spring Boot 3.3, Java 21) and frontend (React 18 + Vite + TypeScript) were built
-phase-by-phase by Claude Code, following the layering and conventions fixed in `CLAUDE.md`
-(controller → service → repository, DTOs never expose entities, error envelope, etc.). Each
-phase was verified against its spec'd acceptance criteria (curl checks, JUnit tests, or a
-manual browser pass) before moving to the next.
-
-## Where AI-driven decisions were wrong, and how that was caught
+## Where I caught AI getting it wrong
 
 This is the part worth being specific about, since it's the most informative part of an
 AI-collaboration log:
 
-- **CryptoPanic → CryptoCompare (docs-only swap, wrong on both counts).** Mid-build, a prior
-  session found CryptoPanic's free tier gone and swapped the design to CryptoCompare
-  (CoinDesk Data) on the claim that it had a working 100k-calls/month free tier. Neither claim
-  was actually verified — a later session checked both live and found CryptoCompare's free
-  tier had *also* been retired (May 2026, confirmed via CoinDesk's own blog post, not a
-  third-party summary), and CryptoPanic's status was murkier than the original claim suggested
-  too. Lesson applied afterward: don't trust a provider's free-tier status from memory or a
-  single search result — verify against the vendor's own current documentation, or by making
-  a real authenticated call, before committing to a design decision around it.
-- **News provider: settled on public RSS feeds, not a fourth vendor.** Rather than keep
-  chasing another "free tier" (CoinGecko's News endpoint turned out to be paid-only too,
-  confirmed by testing a real API key against it and getting an explicit
-  `PRO API subscribers only` error), the design switched to Cointelegraph + Decrypt RSS feeds
-  — publisher-syndicated, no key, no vendor pricing risk. This was verified live end-to-end
-  (a real Java client run against the real feeds, not just curl) before being committed,
-  including checking actual Unicode encoding correctness, not just that articles came back.
-- **The pinned OpenRouter model was also dead.** `meta-llama/llama-3.1-8b-instruct:free`,
-  specified in the original spec, returned `404` against a real API key. Six live free-model
-  candidates were tested against the real AI Insight prompt (not just "does it respond" — the
-  actual 3-5-sentence generation task with the real token budget). Several were rate-limited,
-  several were too slow for the 10s timeout, and one (`nvidia/nemotron-nano-9b-v2:free`) looked
-  fine on a short test but turned out to be a reasoning model whose hidden chain-of-thought
-  consumed the entire `max_tokens` budget on a real prompt, truncating the actual visible
-  output mid-sentence (`finish_reason: "length"`) — a failure mode invisible unless you check
-  `finish_reason` and not just whether the call returned `200`. `poolside/laguna-xs-2.1:free`
-  was the model that actually held up under the real prompt, with `max_tokens` raised to give
-  its own reasoning overhead room.
+- **CryptoPanic → CryptoCompare, wrong on both counts.** Mid-build, an earlier session of mine
+  found CryptoPanic's free tier gone and swapped the design to CryptoCompare (CoinDesk Data)
+  on the claim it had a working 100k-calls/month free tier. I hadn't verified that claim myself
+  before accepting it, and a later session I ran caught it: I checked both live and found
+  CryptoCompare's free tier had *also* been retired (May 2026, confirmed against CoinDesk's own
+  blog post, not a third-party summary), and CryptoPanic's status was murkier than the original
+  claim suggested too. The lesson I applied afterward: I don't accept a provider's free-tier
+  status from an AI's memory or a single search result anymore — I make it verify against the
+  vendor's own current docs, or with a real authenticated call, before I let a design decision
+  rest on it.
+- **Settled on public RSS feeds instead of chasing a fourth vendor.** Rather than keep chasing
+  another "free tier" (CoinGecko's own News endpoint turned out to be paid-only too — I had it
+  test a real API key against it and it came back with an explicit `PRO API subscribers only`
+  error), I decided to switch the design to Cointelegraph + Decrypt RSS feeds — publisher-
+  syndicated, no key, no vendor pricing risk to track. I didn't accept this until I'd seen it
+  verified live end-to-end — a real Java client run against the real feeds, not just a curl
+  check — including confirming Unicode encoding came through correctly, not just that articles
+  came back at all.
+- **The pinned OpenRouter model was dead too.** `meta-llama/llama-3.1-8b-instruct:free`, the
+  model specified in my original spec, returned `404` against a real API key. I had six live
+  free-model candidates tested against the actual AI Insight prompt — not "does it respond,"
+  the real 3–5-sentence generation task under the real token budget. Several were rate-limited,
+  several too slow for the 10s timeout, and one (`nvidia/nemotron-nano-9b-v2:free`) looked fine
+  on a short test but turned out to be a reasoning model whose hidden chain-of-thought consumed
+  the entire `max_tokens` budget on a real prompt, truncating the visible output mid-sentence
+  (`finish_reason: "length"`) — a failure mode I'd have missed if I'd only checked for a `200`
+  and not looked at `finish_reason`. I settled on `poolside/laguna-xs-2.1:free`, the one that
+  actually held up, and raised `max_tokens` to give its reasoning overhead room.
 
-## Deployment (Phase 8)
+## Deployment — I verified the live system myself, not the dashboards' word for it
 
-Railway (backend) and Netlify (frontend) were configured through their dashboards (no CLI
-access from the assistant side) with the assistant providing exact values and verifying each
-step against the live URLs rather than trusting "should be good now":
+I configured Railway (backend) and Netlify (frontend) myself through their dashboards, and I
+insisted on verifying each step against the live URLs rather than trusting a "deployed
+successfully" message:
 
-- Caught a real secret before it reached git: an OpenRouter API key had been pasted into the
-  tracked `backend/.env.example` template instead of the git-ignored `backend/.env` — found via
-  `git diff` before committing, moved to the correct file, reverted the tracked one.
-- Caught that `meta-llama/llama-3.1-8b-instruct:free` being dead (see above) would have
-  silently degraded every AI Insight to fallback text in production if not caught pre-deploy.
-- Caught a placeholder-URL bug in the live Netlify deploy: the literal example text
+- I caught a real secret before it reached git: an OpenRouter API key had ended up pasted into
+  the tracked `backend/.env.example` template instead of the git-ignored `backend/.env` — I
+  caught it in `git diff` before committing, moved it to the correct file, and reverted the
+  tracked one.
+- I caught that the dead `meta-llama/llama-3.1-8b-instruct:free` model (above) would have
+  silently degraded every AI Insight to fallback text in production if I hadn't checked it
+  pre-deploy.
+- I caught a placeholder-URL bug in the live Netlify deploy: the literal example text
   `https://<your-railway-url-from-part-1>` had been pasted into `VITE_API_BASE_URL` instead of
-  the real URL. Found by fetching the deployed JS bundle directly and grepping for the baked-in
-  `baseURL` value — not visible from the page loading fine, since Vite bakes env vars in at
-  build time and the static shell renders regardless.
-- Diagnosed a CORS `403` after the Netlify env fix by checking `CorsConfig.java`'s exact-match
-  behavior and confirming the timing issue (Railway's `FRONTEND_ORIGIN` variable had been
-  updated but the service hadn't finished redeploying — Spring reads that value once at boot,
-  not live).
-- Verified the full flow against the *live* deployment (not localhost) after each fix: register
-  → set preferences → dashboard with real external data → vote → reload with the vote
-  persisted — confirmed via direct `curl` calls with the real `Origin` header, not assumed from
-  the dashboards saying "deployed successfully."
+  the real URL. I found it by fetching the deployed JS bundle myself and grepping for the
+  baked-in `baseURL` value — it wasn't visible just from the page loading fine, since Vite
+  bakes env vars in at build time and the static shell renders regardless of whether the API
+  calls actually work.
+- I diagnosed a CORS `403` after fixing the Netlify env var by checking `CorsConfig.java`'s
+  exact-match behavior myself and confirming the real cause was a timing issue — Railway's
+  `FRONTEND_ORIGIN` variable had been updated but the service hadn't finished redeploying, and
+  Spring reads that value once at boot, not live.
+- I verified the full flow against the *live* deployment (not localhost) after every fix:
+  register → set preferences → dashboard with real external data → vote → reload with the vote
+  persisted — confirmed with direct `curl` calls carrying the real `Origin` header myself, not
+  assumed from a dashboard saying "deployed successfully."
 
-## Takeaway
+## Post-launch: I went back and re-checked against the actual assignment brief
 
-The recurring pattern worth naming: several of this build's real bugs were introduced by an
-earlier AI session's *unverified* claims (a dead free tier assumed still free, a pinned model
-assumed still live, a config value assumed correct because it "looked" filled in). All of them
-were caught by a later session actually testing the live system — a real API call, a real
-deployed bundle, a real cross-origin request — rather than trusting documentation, memory, or
-a green checkmark in a dashboard UI.
+After the initial build was live, I asked Claude Code to do a deep compliance pass — not just
+against `specs.md` (which I'd already written and could be wrong in the same ways I was), but
+against the original assignment PDF itself, plus real manual testing (booting the real stack,
+hitting every endpoint, driving the actual UI in a browser). I wanted an independent check
+against the source document, not just my own derived spec agreeing with itself.
+
+That pass surfaced a real bug I'd missed: the JWT was only kept in memory client-side, so any
+page reload silently logged a user out even though the token was still valid server-side for
+24h. I reviewed the proposed fix, tested it myself in a real browser (reload keeps the session,
+a second tab shares it, logout still works correctly) before I approved pushing it.
+
+The same review also surfaced two places where my build had quietly resolved assignment
+ambiguity in a way I wasn't fully comfortable with once I saw the literal wording again: the
+meme was cached once per day instead of being "shown dynamically each time the dashboard
+updates" as the brief states, and the section title in the UI ("Fun Crypto Meme") was
+redundant next to the caption already shown. I made the call on both — changed the meme to be
+picked fresh on every dashboard load (verified live: distinct memes across repeated reloads)
+and removed the redundant title — and had the accompanying tests rewritten to match the new
+behavior rather than leaving stale assertions in place.
+
+## Takeaway — and where I land on responsibility
+
+The recurring pattern worth naming: several of this build's real bugs came from *unverified*
+claims an earlier session of mine had accepted too easily — a dead free tier assumed still
+free, a pinned model assumed still live, a config value assumed correct because it "looked"
+filled in, a session-persistence assumption I hadn't actually tested by hand. Every one of them
+was caught only when I made a later session actually test the live system — a real API call, a
+real deployed bundle, a real cross-origin request, a real browser reload — rather than trusting
+documentation, memory, or a green checkmark in a dashboard UI.
+
+I used Claude Code to generate most of the code in this repo, but I reviewed the diffs, ran the
+tests, and did the manual verification myself before anything shipped. I take responsibility
+for what's in this repository — AI-assisted or not.
