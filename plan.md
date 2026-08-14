@@ -22,7 +22,7 @@
 
 ## Phase 0 — Repo & environment bootstrap
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Initialize git, connect to the GitHub remote, create the monorepo skeleton folders, add root `.gitignore`, and confirm toolchain versions are installed locally.
 
@@ -39,7 +39,7 @@
 
 ## Phase 1 — Backend skeleton + local Postgres
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Generate the Spring Boot project (Web, Security, Validation, Data JPA, Flyway, PostgreSQL driver, Actuator), set up package structure per specs.md §3.1, add `docker-compose.yml` for local Postgres 16, write the `V1__init.sql` Flyway migration (full schema from specs.md §5.1), and expose `/actuator/health`.
 
@@ -64,7 +64,7 @@
 
 ## Phase 2 — Frontend skeleton
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Scaffold the Vite + React + TypeScript app, install Tailwind, TanStack Query, React Router, Axios; build the folder structure from specs.md §3.2 with placeholder pages; wire `AppRouter` with the route guard rules (public `/login`/`/register`, everything else behind auth) using stub `AuthContext` (not yet backed by real auth).
 
@@ -82,7 +82,7 @@
 
 ## Phase 3 — Auth vertical slice
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Implement register/login end-to-end per specs.md §4.1: `User` entity + repository, `BCryptPasswordEncoder`, `JwtService` (HS256, 24h expiry, claims per spec), `JwtAuthFilter`, `SecurityConfig` (CORS allow-list from `FRONTEND_ORIGIN`, permit `/api/auth/**` and `/actuator/health`, authenticate everything else), `AuthController` + `AuthService`, `GlobalExceptionHandler` (error envelope per §4.5, at minimum: validation → 400, duplicate email → 409, bad login → 401). Frontend: `LoginPage`, `RegisterPage`, real `AuthContext` (stores JWT + user in memory, exposes `login`/`register`/`logout`), `apiClient.ts` with request interceptor attaching `Authorization: Bearer` and a 401 response interceptor that clears context and redirects to `/login`.
 
@@ -99,7 +99,7 @@
 
 ## Phase 4 — Onboarding vertical slice
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Per specs.md §4.2, §5.2: seed `data/coins.json` (30 curated coins) as a startup-loaded bean, `UserPreferences` entity + migration is already in `V1__init.sql` from Phase 1 (no new migration needed — confirm no schema drift), `PreferenceService` (validates `investorType`/`contentTypes` enums and `interests` against the curated list), `PreferencesController` (`GET /options`, `GET /preferences`, `PUT /preferences`). Frontend: `OnboardingPage` with the 3-step quiz (`AssetsStep`, `InvestorTypeStep`, `ContentStep`), wired to `GET /options` for choices and `PUT /preferences` on submit; the router gate from specs.md §3.2 (`GET /preferences` 404 → force `/onboarding`) becomes real.
 
