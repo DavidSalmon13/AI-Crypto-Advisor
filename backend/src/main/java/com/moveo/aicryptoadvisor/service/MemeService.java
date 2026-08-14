@@ -1,68 +1,30 @@
 package com.moveo.aicryptoadvisor.service;
 
-import com.moveo.aicryptoadvisor.entity.DailyContent;
-import com.moveo.aicryptoadvisor.entity.DailyContentType;
-import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.security.SecureRandom;
 import org.springframework.stereotype.Service;
 
 /**
- * Fun Crypto Meme of the Day — picked deterministically from the static pool and cached in
- * {@code daily_content} exactly like the AI Insight (specs.md §7.3).
+ * Fun Crypto Meme — picked fresh from the static pool on every dashboard load, per the
+ * assignment's "shown dynamically each time the dashboard updates" (unlike the AI Insight,
+ * which is intentionally cached once per user per day). Voting targets the pool entry's own
+ * stable id (e.g. {@code meme-014}) directly, since there's no per-request row to key off.
  */
 @Service
 public class MemeService {
 
-    private static final String PAYLOAD_MEME_ID = "memeId";
-    private static final String PAYLOAD_IMAGE_URL = "imageUrl";
-    private static final String PAYLOAD_CAPTION = "caption";
-
-    public record DailyMeme(UUID id, String imageUrl, String caption) {
+    public record DailyMeme(String id, String imageUrl, String caption) {
     }
 
-    private final DailyContentCache dailyContentCache;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final MemePool memePool;
 
-    public MemeService(DailyContentCache dailyContentCache, MemePool memePool) {
-        this.dailyContentCache = dailyContentCache;
+    public MemeService(MemePool memePool) {
         this.memePool = memePool;
     }
 
-    public DailyMeme getOrPick(UUID userId, LocalDate today) {
-        DailyContent row = dailyContentCache.getOrCreate(
-                userId,
-                DailyContentType.MEME,
-                today,
-                () -> pickPayload(userId, today));
-        return toDailyMeme(row);
-    }
-
-    private Map<String, Object> pickPayload(UUID userId, LocalDate today) {
-        MemePool.Meme meme = memePool.get(pickIndex(userId, today, memePool.size()));
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put(PAYLOAD_MEME_ID, meme.id());
-        payload.put(PAYLOAD_IMAGE_URL, meme.imageUrl());
-        payload.put(PAYLOAD_CAPTION, meme.caption());
-        return payload;
-    }
-
-    /**
-     * Deterministic rather than random, so a retry within the same day is idempotent even
-     * before the cache write lands (specs.md §4.3).
-     */
-    static int pickIndex(UUID userId, LocalDate date, int poolSize) {
-        return Math.floorMod((userId.toString() + date).hashCode(), poolSize);
-    }
-
-    private static DailyMeme toDailyMeme(DailyContent row) {
-        Object imageUrl = row.getPayload().get(PAYLOAD_IMAGE_URL);
-        Object caption = row.getPayload().get(PAYLOAD_CAPTION);
-        return new DailyMeme(
-                row.getId(),
-                imageUrl == null ? null : imageUrl.toString(),
-                caption == null ? null : caption.toString());
+    public DailyMeme pickRandom() {
+        MemePool.Meme meme = memePool.get(RANDOM.nextInt(memePool.size()));
+        return new DailyMeme(meme.id(), meme.imageUrl(), meme.caption());
     }
 }

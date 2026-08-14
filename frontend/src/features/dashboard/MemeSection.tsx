@@ -4,8 +4,6 @@ import type { Meme } from '../../types/dashboard';
 export function MemeSection({ meme }: { meme: Meme }) {
   return (
     <section className="rounded-lg bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Fun Crypto Meme</h2>
-
       <figure>
         <img
           src={meme.imageUrl}
