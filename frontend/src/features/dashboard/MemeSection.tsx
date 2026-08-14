@@ -1,3 +1,4 @@
+import { VoteButtons } from '../../components/VoteButtons';
 import type { Meme } from '../../types/dashboard';
 
 export function MemeSection({ meme }: { meme: Meme }) {
@@ -12,7 +13,10 @@ export function MemeSection({ meme }: { meme: Meme }) {
           loading="lazy"
           className="w-full rounded-md border border-slate-200 object-cover"
         />
-        <figcaption className="mt-3 text-sm text-slate-600">{meme.caption}</figcaption>
+        <figcaption className="mt-3 flex items-center justify-between gap-3 text-sm text-slate-600">
+          <span>{meme.caption}</span>
+          <VoteButtons itemType="MEME" itemRef={meme.id} userVote={meme.userVote} />
+        </figcaption>
       </figure>
     </section>
   );

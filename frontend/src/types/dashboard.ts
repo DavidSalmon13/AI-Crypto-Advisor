@@ -1,7 +1,10 @@
 /** Mirrors backend DashboardResponse (specs.md §4.3) field-for-field. */
 
-/** 1 = 👍, -1 = 👎, null = not voted yet. Vote buttons arrive in Phase 6. */
+/** 1 = 👍, -1 = 👎, null = not voted yet. */
 export type Vote = 1 | -1 | null;
+
+/** Voteable sections — Coin Prices is raw data, not curated content, so it is excluded. */
+export type ItemType = 'NEWS' | 'AI_INSIGHT' | 'MEME';
 
 export interface CoinPrice {
   id: string;
