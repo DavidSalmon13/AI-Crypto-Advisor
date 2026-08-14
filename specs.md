@@ -180,6 +180,7 @@ Response `200`:
 Request: same shape as the `200` response above.
 Validation: `investorType` ∈ enum; `contentTypes` — 1–4 items, each ∈ enum, no duplicates; `interests` — 1–10 items, each must exist in the curated coin list (else `400 UNKNOWN_COIN_ID`).
 Response `200`: the saved object.
+On an edit (not the first submit) that actually changes `investorType`, `interests`, or `contentTypes` (order-insensitive comparison — resubmitting the same set in a different click order doesn't count), today's cached AI Insight is deleted so the next `GET /api/dashboard` regenerates it under the new profile instead of serving one built from the old profile until the next UTC day (see §7.2).
 
 ### 4.3 Dashboard
 
@@ -333,6 +334,8 @@ On failure (timeout / non-2xx / empty completion): fallback text — `"Markets m
 ### 7.2 Why lazy per-user caching, not a scheduled batch job
 
 No `@Scheduled` cron job for the AI Insight. Generation happens inside the request path of the *first* `GET /api/dashboard` call by a given user on a given UTC day, gated by the `daily_content` unique constraint (`ON CONFLICT DO NOTHING` semantics via a try-insert-then-read pattern in `AiInsightService`). This keeps free-tier API usage proportional to actual active users rather than all-registered-users, and requires no scheduler infrastructure on Railway. (The Meme has no such gating — see §7.3, it's cheap enough to pick fresh every time.)
+
+The cache key is `(user_id, content_type, content_date)` — it has no notion of *which* profile the cached text was generated from. A same-day preference edit would otherwise keep serving an insight built from the old profile for the rest of the day, silently contradicting what the user just told the app about themselves. `PreferenceService.upsertForUser` (§4.2) closes that gap by deleting today's cached row whenever the edit actually changes `investorType`/`interests`/`contentTypes` — a plain cache invalidation on write, not a change to the cache key or schema, so it doesn't affect the once-per-day cost-control behavior for users who *don't* edit their preferences.
 
 ### 7.3 Meme selection
 
