@@ -23,7 +23,7 @@ A personalized crypto dashboard. A user registers, completes a one-time onboardi
 | Auth | JWT (HS256), Spring Security |
 | AI | OpenRouter (free-tier model) |
 | Market data | CoinGecko public API |
-| News | CryptoPanic free API + static JSON fallback |
+| News | CryptoCompare News API (CoinDesk Data) free tier + static JSON fallback |
 | Memes | Static curated JSON (no live scraping) |
 | Backend host | Railway (root dir `/backend`) |
 | Frontend host | Netlify (base dir `/frontend`) |
@@ -51,7 +51,7 @@ AI-Crypto-Advisor/
    - Preferred content style — multi-select: `MARKET_NEWS` | `CHARTS` | `SOCIAL` | `FUN`.
 4. **Daily Dashboard** — always renders all 4 sections (see §6 for why content-type preference does not hide sections):
    - Coin Prices for the user's selected coins (live, CoinGecko).
-   - Market News (CryptoPanic, cached 20 min server-side, static fallback on failure).
+   - Market News (CryptoCompare, cached 20 min server-side, static fallback on failure).
    - AI Insight of the Day (OpenRouter, generated once/user/day, cached).
    - Fun Crypto Meme (static pool, one picked deterministically per user/day, cached).
 5. **Voting** — thumbs up/down on individual News articles, the AI Insight, and the Meme. Re-voting updates the existing vote (no duplicate rows). Coin Prices is not voteable (it's raw data, not curated content).
@@ -59,7 +59,7 @@ AI-Crypto-Advisor/
 
 ### 2.1 Explicitly out of scope
 
-To remove ambiguity about what this build does *not* include: password reset/forgot-password flow, email verification, refresh tokens (JWT simply expires after 24h and the user re-logs in), an admin panel, multi-language support, dark mode, pagination on news (fixed page size, see §4.4), rate limiting beyond the CryptoPanic cache, and actual retraining of a recommendation model (design only, per §7.4).
+To remove ambiguity about what this build does *not* include: password reset/forgot-password flow, email verification, refresh tokens (JWT simply expires after 24h and the user re-logs in), an admin panel, multi-language support, dark mode, pagination on news (fixed page size, see §4.4), rate limiting beyond the news cache, and actual retraining of a recommendation model (design only, per §7.4).
 
 ---
 
@@ -76,14 +76,14 @@ flowchart LR
     end
     subgraph External
         CG["CoinGecko API"]
-        CP["CryptoPanic API"]
+        CC["CryptoCompare News API"]
         OR["OpenRouter API"]
     end
 
     FE -- "HTTPS + JWT Bearer" --> BE
     BE -- JDBC --> DB
     BE -- REST --> CG
-    BE -- REST --> CP
+    BE -- REST --> CC
     BE -- REST --> OR
 ```
 
@@ -100,7 +100,7 @@ com.moveo.aicryptoadvisor
 ├── security/           (JwtService, JwtAuthFilter, UserDetailsServiceImpl)
 ├── controller/          (AuthController, PreferencesController, DashboardController, FeedbackController)
 ├── service/             (AuthService, PreferenceService, DashboardService, AiInsightService, MemeService, NewsService, CoinPriceService, FeedbackService)
-├── client/              (CoinGeckoClient, CryptoPanicClient, OpenRouterClient)
+├── client/              (CoinGeckoClient, CryptoCompareClient, OpenRouterClient)
 ├── repository/          (UserRepository, UserPreferencesRepository, DailyContentRepository, FeedbackRepository)
 ├── entity/              (User, UserPreferences, DailyContent, Feedback)
 ├── dto/                 (request/ and response/ subpackages)
@@ -192,7 +192,7 @@ Response `200`:
     { "id": "bitcoin", "symbol": "BTC", "name": "Bitcoin", "priceUsd": 61234.12, "change24hPct": 2.34 }
   ],
   "marketNews": [
-    { "id": "cp-4821931", "title": "...", "url": "https://...", "source": "CoinDesk", "publishedAt": "2026-08-14T06:00:00Z", "userVote": null }
+    { "id": "cc-4821931", "title": "...", "url": "https://...", "source": "CoinDesk", "publishedAt": "2026-08-14T06:00:00Z", "userVote": null }
   ],
   "aiInsight": { "id": "uuid", "text": "...", "generatedAt": "2026-08-14T00:03:11Z", "fallback": false, "userVote": 1 },
   "meme": { "id": "meme-014", "imageUrl": "https://...", "caption": "...", "userVote": null }
@@ -202,7 +202,7 @@ Response `200`:
 
 Orchestration logic per section (exact, no ambiguity):
 - **Coin Prices**: always live — calls CoinGecko `/simple/price?ids=<comma-joined interests>&vs_currencies=usd&include_24hr_change=true` on every request. No DB caching (price staleness is undesirable here). If the user has 0 interests saved (shouldn't happen given §4.2 validation), the array is empty.
-- **Market News**: server-wide (not per-user) in-memory cache, TTL 20 minutes, keyed by the sorted set of coin ids currently requested across active users — simplified to: one shared cache entry for "general crypto news," TTL 20 min, refreshed lazily on the first request after expiry. On CryptoPanic error/timeout (5s timeout), serve `backend/src/main/resources/data/news-fallback.json` (10 static headlines) and continue — never fail the whole dashboard call.
+- **Market News**: server-wide (not per-user) in-memory cache, TTL 20 minutes, keyed by the sorted set of coin ids currently requested across active users — simplified to: one shared cache entry for "general crypto news," TTL 20 min, refreshed lazily on the first request after expiry. Source: CryptoCompare News API — `GET https://min-api.cryptocompare.com/data/v2/news/?lang=EN`, authenticated via `Authorization: Apikey ${CRYPTOCOMPARE_API_KEY}` header. Field mapping from each article in the response's `Data` array: `id` → `"cc-" + id`, `title` → `title`, `url` → `url`, `source_info.name` → `source`, `published_on` (unix seconds) → `publishedAt` (ISO-8601 UTC). On CryptoCompare error/timeout (5s timeout), serve `backend/src/main/resources/data/news-fallback.json` (10 static headlines) and continue — never fail the whole dashboard call.
 - **AI Insight**: check `daily_content` for `(user_id, content_type='AI_INSIGHT', content_date=today UTC)`. Hit → return cached payload. Miss → call OpenRouter (see §7.1 for prompt), persist to `daily_content`, return. If OpenRouter call fails (timeout 10s, non-2xx, or malformed response), persist and return a static fallback insight with `"fallback": true` — never a 5xx to the client for this reason.
 - **Meme**: check `daily_content` for `(user_id, content_type='MEME', content_date=today UTC)`. Hit → return cached payload. Miss → deterministically pick `hash(userId + date) mod memes.length` from the static 25-entry `memes.json`, persist, return. Deterministic picking (not random) means retries within the same day are idempotent even before the cache write lands.
 
@@ -211,15 +211,15 @@ Orchestration logic per section (exact, no ambiguity):
 **`POST /api/feedback`** (auth) — upsert a vote.
 Request:
 ```json
-{ "itemType": "NEWS", "itemRef": "cp-4821931", "vote": 1 }
+{ "itemType": "NEWS", "itemRef": "cc-4821931", "vote": 1 }
 ```
-`itemType` ∈ `NEWS | AI_INSIGHT | MEME`. `itemRef` — for `NEWS` it's the CryptoPanic article id (as returned in `marketNews[].id`); for `AI_INSIGHT`/`MEME` it's the `daily_content.id` UUID (as returned in `aiInsight.id`/`meme.id`). `vote` ∈ `{1, -1}`.
+`itemType` ∈ `NEWS | AI_INSIGHT | MEME`. `itemRef` — for `NEWS` it's the `cc-`-prefixed CryptoCompare article id (as returned in `marketNews[].id`); for `AI_INSIGHT`/`MEME` it's the `daily_content.id` UUID (as returned in `aiInsight.id`/`meme.id`). `vote` ∈ `{1, -1}`.
 Server sets `item_date` = today (UTC) automatically; does not trust a client-supplied date.
-Response `200`: `{ "id": "uuid", "itemType": "NEWS", "itemRef": "cp-4821931", "vote": 1 }`. Upsert is keyed on the unique constraint `(user_id, item_type, item_ref)` — a second call with a different `vote` value flips the existing row rather than creating a new one.
+Response `200`: `{ "id": "uuid", "itemType": "NEWS", "itemRef": "cc-4821931", "vote": 1 }`. Upsert is keyed on the unique constraint `(user_id, item_type, item_ref)` — a second call with a different `vote` value flips the existing row rather than creating a new one.
 
 **`DELETE /api/feedback/{itemType}/{itemRef}`** (auth) — retract a vote. `204` on success (idempotent — `204` even if no vote existed).
 
-News list size (fixed, not paginated): dashboard always returns the **top 10** CryptoPanic results for the query.
+News list size (fixed, not paginated): dashboard always returns the **top 10** articles from the CryptoCompare response (the API returns articles sorted latest-first; take the first 10).
 
 ### 4.5 Error envelope (all non-2xx responses)
 
@@ -296,7 +296,7 @@ Migrations run automatically on backend boot (`spring.flyway.enabled=true`, defa
 
 - `data/coins.json` — the 30-coin curated onboarding list (§4.2).
 - `data/memes.json` — 25 `{id, imageUrl, caption}` meme entries.
-- `data/news-fallback.json` — 10 static `{id, title, url, source, publishedAt}` headlines, CryptoPanic-outage fallback.
+- `data/news-fallback.json` — 10 static `{id, title, url, source, publishedAt}` headlines, CryptoCompare-outage fallback.
 
 These are read-only reference data seeded at application startup into in-memory beans (not persisted to Postgres) — they change only via a code deploy, never via runtime writes, so a DB table would add write-path complexity for no benefit.
 
@@ -412,7 +412,7 @@ sequenceDiagram
 | `JWT_SECRET` | ≥32-byte random string for HS256 signing |
 | `OPENROUTER_API_KEY` | OpenRouter free-tier key |
 | `OPENROUTER_MODEL` | default `meta-llama/llama-3.1-8b-instruct:free` |
-| `CRYPTOPANIC_API_KEY` | CryptoPanic free-tier key |
+| `CRYPTOCOMPARE_API_KEY` | CryptoCompare (CoinDesk Data) free-tier key |
 | `FRONTEND_ORIGIN` | exact Netlify URL, for CORS allow-list |
 | `PORT` | injected by Railway; Spring Boot binds to it automatically |
 

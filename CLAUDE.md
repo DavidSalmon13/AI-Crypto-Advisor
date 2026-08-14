@@ -19,7 +19,7 @@ Full technical specification: **`specs.md`**. Phased build plan and current buil
 | Auth | JWT (HS256, 24h expiry), Spring Security — stateless, no sessions, no refresh tokens |
 | AI | OpenRouter (free-tier model, default `meta-llama/llama-3.1-8b-instruct:free`) |
 | Market data | CoinGecko public API |
-| News | CryptoPanic free API + static JSON fallback on failure |
+| News | CryptoCompare News API (CoinDesk Data) free tier + static JSON fallback on failure |
 | Memes | Static curated JSON (no live scraping) |
 | Backend host | Railway (root dir `/backend`) |
 | Frontend host | Netlify (base dir `/frontend`) |
@@ -39,7 +39,7 @@ AI-Crypto-Advisor/
 └── CLAUDE.md    this file
 ```
 
-**Backend layering**: `controller → service → repository`, plus `client/` for outbound HTTP integrations (CoinGecko, CryptoPanic, OpenRouter) and `security/` for JWT. Entities are never serialized directly — every endpoint has a request/response DTO in `dto/`.
+**Backend layering**: `controller → service → repository`, plus `client/` for outbound HTTP integrations (CoinGecko, CryptoCompare, OpenRouter) and `security/` for JWT. Entities are never serialized directly — every endpoint has a request/response DTO in `dto/`.
 
 **Key architectural decisions** (see specs.md for full rationale):
 - All 4 dashboard sections always render for every user — onboarding's `content_types` preference biases tone/framing (e.g. the AI Insight prompt), it does not hide sections.
@@ -57,7 +57,7 @@ config/       SecurityConfig, CorsConfig, CacheConfig
 security/     JwtService, JwtAuthFilter
 controller/   one per resource — AuthController, PreferencesController, DashboardController, FeedbackController
 service/      business logic — one per concern, e.g. AiInsightService, MemeService, FeedbackService
-client/       outbound HTTP wrappers — CoinGeckoClient, CryptoPanicClient, OpenRouterClient
+client/       outbound HTTP wrappers — CoinGeckoClient, CryptoCompareClient, OpenRouterClient
 repository/   Spring Data JPA repositories
 entity/       JPA entities — never returned from controllers directly
 dto/          request/ and response/ subpackages
@@ -92,7 +92,7 @@ routes/       AppRouter.tsx
 
 ### Secrets / environment
 
-- Backend: `backend/.env` (git-ignored), documented in `backend/.env.example`. Required keys: `DATABASE_URL`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `CRYPTOPANIC_API_KEY`, `FRONTEND_ORIGIN`.
+- Backend: `backend/.env` (git-ignored), documented in `backend/.env.example`. Required keys: `DATABASE_URL`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `CRYPTOCOMPARE_API_KEY`, `FRONTEND_ORIGIN`.
 - Frontend: `frontend/.env.local` (git-ignored, Vite convention), documented in `frontend/.env.example`. Required key: `VITE_API_BASE_URL`.
 - Never commit real keys/secrets; only `.env.example` files are tracked.
 
