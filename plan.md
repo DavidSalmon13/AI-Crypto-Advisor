@@ -198,7 +198,7 @@ Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsight
 
 ## Phase 9 — DB access deliverable + final deliverables checklist
 
-**Status**: Mostly done — `AI_USAGE.md` populated, deliverables checklist walked in specs.md §9.4. Still open: run `backend/scripts/reviewer_role.sql` against the live Railway DB and share the resulting connection string with the reviewer out of band (needs DB credentials the assistant doesn't have access to).
+**Status**: Done — `AI_USAGE.md` populated, `reviewer` role created and verified against the live Railway DB (reads succeed on all 4 tables, writes correctly rejected), deliverables checklist in specs.md §9.4 fully checked off.
 
 **What**: Per specs.md §9.3/§9.4: create the read-only `reviewer` Postgres role on the Railway DB with the exact grants specified, populate `AI_USAGE.md` with a real summary of AI-tool collaboration during this build, and walk the full deliverables checklist.
 

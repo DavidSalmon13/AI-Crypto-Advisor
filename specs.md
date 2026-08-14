@@ -434,5 +434,5 @@ A **read-only** Postgres role (`CREATE ROLE reviewer WITH LOGIN PASSWORD '...' N
 
 - [x] Public GitHub repo (this one) with `specs.md` + `AI_USAGE.md`. Verified public via the GitHub API (`"private": false`), not assumed.
 - [x] Deployed frontend URL (Netlify) + deployed backend URL (Railway). Verified live end-to-end (register, preferences, dashboard, vote, reload) against the real deployment, not just that each dashboard reported success.
-- [ ] Read-only DB connection string shared with the reviewer. `backend/scripts/reviewer_role.sql` is ready to run against the live Railway DB (Railway dashboard → Postgres service → Data tab → Query) — still needs to actually be run and the resulting connection string shared with the reviewer out of band.
+- [x] Read-only DB connection string shared with the reviewer. `reviewer` role created against the live Railway DB and verified directly: `SELECT` succeeds on all 4 tables, a write attempt is correctly rejected (`permission denied`). Connection string shared with the project owner out of band, not committed to the repo.
 - [x] `AI_USAGE.md` populated with a summary of AI-tool collaboration during implementation.
