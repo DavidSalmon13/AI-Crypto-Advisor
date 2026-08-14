@@ -10,7 +10,7 @@ import org.springframework.web.client.RestClient;
 
 /**
  * One {@link RestClient} per outbound integration, each pinned to its own base URL and
- * timeout budget (specs.md §4.3/§7.1: 5s for CoinGecko and CryptoCompare, 10s for
+ * timeout budget (specs.md §4.3/§7.1: 5s for CoinGecko and the news RSS feeds, 10s for
  * OpenRouter). Timeouts are the whole point of these beans — an unbounded external call
  * would stall the aggregating dashboard request.
  */
@@ -25,12 +25,12 @@ public class RestClientConfig {
         return build(baseUrl, timeoutSeconds);
     }
 
+    /** No base URL: {@code RssNewsClient} calls each feed's absolute URL directly. */
     @Bean
-    public RestClient cryptoCompareRestClient(
-            @Value("${app.cryptocompare.base-url}") String baseUrl,
-            @Value("${app.cryptocompare.timeout-seconds}") int timeoutSeconds
-    ) {
-        return build(baseUrl, timeoutSeconds);
+    public RestClient newsRestClient(@Value("${app.news.timeout-seconds}") int timeoutSeconds) {
+        return RestClient.builder()
+                .requestFactory(requestFactory(timeoutSeconds))
+                .build();
     }
 
     @Bean
