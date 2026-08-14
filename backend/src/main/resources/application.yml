@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: aicryptoadvisor
+  datasource:
+    url: ${DATABASE_URL}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  frontend-origin: ${FRONTEND_ORIGIN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
