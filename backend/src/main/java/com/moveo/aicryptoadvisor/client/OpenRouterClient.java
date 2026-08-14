@@ -16,7 +16,12 @@ import org.springframework.web.client.RestClient;
 @Component
 public class OpenRouterClient {
 
-    private static final int MAX_TOKENS = 220;
+    /**
+     * The default free model is a reasoning model whose chain-of-thought counts against this
+     * budget before any visible text is produced — 600 leaves headroom for both (verified
+     * 2026-08 against real completions of ~250-420 total tokens including reasoning).
+     */
+    private static final int MAX_TOKENS = 600;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record ChatResponse(@JsonProperty("choices") List<Choice> choices) {

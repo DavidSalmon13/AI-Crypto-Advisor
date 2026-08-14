@@ -28,7 +28,7 @@ app:
   openrouter:
     base-url: https://openrouter.ai/api/v1
     api-key: ${OPENROUTER_API_KEY:}
-    model: "${OPENROUTER_MODEL:meta-llama/llama-3.1-8b-instruct:free}"
+    model: "${OPENROUTER_MODEL:poolside/laguna-xs-2.1:free}"
     timeout-seconds: 10
 
 management:

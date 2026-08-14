@@ -17,7 +17,7 @@ Full technical specification: **`specs.md`**. Phased build plan and current buil
 | Database | PostgreSQL 16 (Railway-managed in prod, Docker Compose locally) |
 | Migrations | Flyway |
 | Auth | JWT (HS256, 24h expiry), Spring Security — stateless, no sessions, no refresh tokens |
-| AI | OpenRouter (free-tier model, default `meta-llama/llama-3.1-8b-instruct:free`) |
+| AI | OpenRouter (free-tier model, default `poolside/laguna-xs-2.1:free`) |
 | Market data | CoinGecko public API |
 | News | Publisher RSS feeds (Cointelegraph, Decrypt — no key required) + static JSON fallback on failure |
 | Memes | Static curated JSON (no live scraping) |
