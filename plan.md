@@ -149,7 +149,7 @@ Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsight
 
 ## Phase 6 — Feedback voting vertical slice
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Per specs.md §4.4: `FeedbackController` (`POST /api/feedback` upsert, `DELETE /api/feedback/{itemType}/{itemRef}`), `FeedbackService` using the `(user_id, item_type, item_ref)` unique constraint for upsert semantics, server-set `item_date`. Frontend: `VoteButtons` component wired into `MarketNewsSection`, `AiInsightSection`, `MemeSection` (not `CoinPricesSection`, per spec), using TanStack Query mutations with optimistic updates against the `useDashboard` cache.
 

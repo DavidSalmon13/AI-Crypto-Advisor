@@ -1,3 +1,4 @@
+import { VoteButtons } from '../../components/VoteButtons';
 import type { AiInsight } from '../../types/dashboard';
 
 export function AiInsightSection({ aiInsight }: { aiInsight: AiInsight }) {
@@ -16,6 +17,10 @@ export function AiInsightSection({ aiInsight }: { aiInsight: AiInsight }) {
       </div>
 
       <p className="whitespace-pre-line leading-relaxed text-slate-700">{aiInsight.text}</p>
+
+      <div className="mt-4 flex justify-end">
+        <VoteButtons itemType="AI_INSIGHT" itemRef={aiInsight.id} userVote={aiInsight.userVote} />
+      </div>
     </section>
   );
 }

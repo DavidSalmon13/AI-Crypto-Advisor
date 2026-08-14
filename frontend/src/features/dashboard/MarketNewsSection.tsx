@@ -1,3 +1,4 @@
+import { VoteButtons } from '../../components/VoteButtons';
 import type { NewsItem } from '../../types/dashboard';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -17,18 +18,21 @@ export function MarketNewsSection({ marketNews }: { marketNews: NewsItem[] }) {
       ) : (
         <ul className="space-y-4">
           {marketNews.map((item) => (
-            <li key={item.id}>
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-slate-900 hover:text-sky-700 hover:underline"
-              >
-                {item.title}
-              </a>
-              <p className="mt-1 text-xs text-slate-500">
-                {item.source} · {dateFormatter.format(new Date(item.publishedAt))}
-              </p>
+            <li key={item.id} className="flex items-start justify-between gap-3">
+              <div>
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="font-medium text-slate-900 hover:text-sky-700 hover:underline"
+                >
+                  {item.title}
+                </a>
+                <p className="mt-1 text-xs text-slate-500">
+                  {item.source} · {dateFormatter.format(new Date(item.publishedAt))}
+                </p>
+              </div>
+              <VoteButtons itemType="NEWS" itemRef={item.id} userVote={item.userVote} />
             </li>
           ))}
         </ul>
