@@ -167,7 +167,7 @@ Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsight
 
 ## Phase 7 — CI (test-only GitHub Actions)
 
-**Status**: Not started
+**Status**: Done
 
 **What**: Add `.github/workflows/test.yml` running `mvn -B test` on every push/PR to `main` (Java 21 setup, no deploy step — Railway/Netlify's own hooks remain the only deploy trigger, per specs.md §1.1 and the sequencing decision above).
 
