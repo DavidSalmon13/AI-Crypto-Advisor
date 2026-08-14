@@ -1,0 +1,72 @@
+[
+  {
+    "id": "fallback-001",
+    "title": "Bitcoin's four-year halving cycle: what it does and doesn't explain",
+    "url": "https://www.coindesk.com/",
+    "source": "CoinDesk",
+    "publishedAt": "2026-01-05T09:00:00Z"
+  },
+  {
+    "id": "fallback-002",
+    "title": "Ethereum staking withdrawals: a practical guide for long-term holders",
+    "url": "https://cointelegraph.com/",
+    "source": "Cointelegraph",
+    "publishedAt": "2026-01-05T10:30:00Z"
+  },
+  {
+    "id": "fallback-003",
+    "title": "Layer-2 rollups explained: throughput, fees, and the trust trade-offs",
+    "url": "https://decrypt.co/",
+    "source": "Decrypt",
+    "publishedAt": "2026-01-06T08:15:00Z"
+  },
+  {
+    "id": "fallback-004",
+    "title": "Stablecoin reserves under scrutiny as regulators sharpen disclosure rules",
+    "url": "https://www.theblock.co/",
+    "source": "The Block",
+    "publishedAt": "2026-01-06T12:45:00Z"
+  },
+  {
+    "id": "fallback-005",
+    "title": "Self-custody basics: seed phrases, hardware wallets, and recovery planning",
+    "url": "https://bitcoinmagazine.com/",
+    "source": "Bitcoin Magazine",
+    "publishedAt": "2026-01-07T07:20:00Z"
+  },
+  {
+    "id": "fallback-006",
+    "title": "Why exchange volume is a noisier signal than it looks",
+    "url": "https://www.coindesk.com/",
+    "source": "CoinDesk",
+    "publishedAt": "2026-01-07T14:05:00Z"
+  },
+  {
+    "id": "fallback-007",
+    "title": "NFT markets mature: royalties, provenance, and the shift to utility",
+    "url": "https://decrypt.co/",
+    "source": "Decrypt",
+    "publishedAt": "2026-01-08T09:40:00Z"
+  },
+  {
+    "id": "fallback-008",
+    "title": "Dollar-cost averaging versus timing the market: what the data supports",
+    "url": "https://cointelegraph.com/",
+    "source": "Cointelegraph",
+    "publishedAt": "2026-01-08T16:10:00Z"
+  },
+  {
+    "id": "fallback-009",
+    "title": "Reading on-chain data without fooling yourself",
+    "url": "https://www.theblock.co/",
+    "source": "The Block",
+    "publishedAt": "2026-01-09T11:00:00Z"
+  },
+  {
+    "id": "fallback-010",
+    "title": "Custody, counterparty risk, and the case for spreading exposure",
+    "url": "https://bitcoinmagazine.com/",
+    "source": "Bitcoin Magazine",
+    "publishedAt": "2026-01-09T15:25:00Z"
+  }
+]

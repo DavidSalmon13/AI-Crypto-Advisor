@@ -116,7 +116,7 @@
 
 ## Phase 5 — Dashboard vertical slice (4 sections + aggregation)
 
-**Status**: Not started
+**Status**: Done
 
 **What**: The largest phase; build incrementally, section by section, per specs.md §4.3/§7.1–7.3, verifying each section's service in isolation before wiring the aggregating controller.
 
@@ -140,6 +140,10 @@ Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsight
 5. Aggregation: full `GET /api/dashboard` returns all 4 sections in the exact shape from specs.md §4.3, with `userVote: null` for everything (no votes exist yet).
 - JUnit: `AiInsightServiceTest` and `MemeServiceTest` covering the cache-hit vs cache-miss branches (the "risky logic" specs.md's testing scope calls out).
 - Browser: logged-in user with completed onboarding sees a populated dashboard with real prices, real (or fallback) news, an AI-generated insight, and a meme.
+
+**Still open after this phase** (neither blocks Phase 6):
+- **Live-API verification**: the suite proves the degraded path (all three integrations failing → still `200` with fallbacks). Confirming the happy path needs real `CRYPTOCOMPARE_API_KEY`/`OPENROUTER_API_KEY` values and outbound network, i.e. a local run.
+- **Meme artwork**: `data/memes.json` ships 25 entries whose `imageUrl`s are generated placeholders. Swapping in real curated images is a content edit to that one file — no code change.
 
 ---
 

@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class CoinCatalog {
     }
 
     private final List<Coin> coins;
-    private final Set<String> coinIds;
+    private final Map<String, Coin> coinsById;
 
     public CoinCatalog(ObjectMapper objectMapper) {
         try (InputStream in = new ClassPathResource("data/coins.json").getInputStream()) {
@@ -31,7 +32,7 @@ public class CoinCatalog {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to load data/coins.json", e);
         }
-        this.coinIds = coins.stream().map(Coin::id).collect(Collectors.toUnmodifiableSet());
+        this.coinsById = coins.stream().collect(Collectors.toUnmodifiableMap(Coin::id, coin -> coin));
     }
 
     public List<Coin> getCoins() {
@@ -39,6 +40,10 @@ public class CoinCatalog {
     }
 
     public boolean containsId(String coinId) {
-        return coinIds.contains(coinId);
+        return coinsById.containsKey(coinId);
+    }
+
+    public Optional<Coin> findById(String coinId) {
+        return Optional.ofNullable(coinsById.get(coinId));
     }
 }

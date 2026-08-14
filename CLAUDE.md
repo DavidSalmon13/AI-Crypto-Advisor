@@ -53,7 +53,7 @@ AI-Crypto-Advisor/
 ### Backend (`backend/src/main/java/com/moveo/aicryptoadvisor/`)
 
 ```
-config/       SecurityConfig, CorsConfig, CacheConfig
+config/       SecurityConfig, CorsConfig, CacheConfig, RestClientConfig
 security/     JwtService, JwtAuthFilter
 controller/   one per resource — AuthController, PreferencesController, DashboardController, FeedbackController
 service/      business logic — one per concern, e.g. AiInsightService, MemeService, FeedbackService

@@ -18,6 +18,20 @@ app:
   jwt:
     secret: ${JWT_SECRET}
   frontend-origin: ${FRONTEND_ORIGIN}
+  # Outbound integrations. API keys default to empty so the app still boots (and tests
+  # still run) without secrets — each client degrades to its documented fallback instead.
+  coingecko:
+    base-url: https://api.coingecko.com/api/v3
+    timeout-seconds: 5
+  cryptocompare:
+    base-url: https://min-api.cryptocompare.com
+    api-key: ${CRYPTOCOMPARE_API_KEY:}
+    timeout-seconds: 5
+  openrouter:
+    base-url: https://openrouter.ai/api/v1
+    api-key: ${OPENROUTER_API_KEY:}
+    model: "${OPENROUTER_MODEL:meta-llama/llama-3.1-8b-instruct:free}"
+    timeout-seconds: 10
 
 management:
   endpoints:
