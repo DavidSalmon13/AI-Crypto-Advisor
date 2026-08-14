@@ -59,7 +59,7 @@ public class DashboardService {
         List<DashboardResponse.CoinPrice> coinPrices = coinPriceService.getPrices(preferences.getInterests());
         List<NewsArticle> articles = newsService.getTopNews().articles();
         AiInsightService.Insight insight = aiInsightService.getOrGenerate(userId, preferences, coinPrices, today);
-        MemeService.DailyMeme meme = memeService.getOrPick(userId, today);
+        MemeService.DailyMeme meme = memeService.pickRandom();
 
         Map<String, Integer> votes = loadVotes(userId, articles, insight.id(), meme.id());
 
@@ -77,24 +77,25 @@ public class DashboardService {
                         meme.id(),
                         meme.imageUrl(),
                         meme.caption(),
-                        votes.get(meme.id().toString())));
+                        votes.get(meme.id())));
     }
 
     /**
      * One query for exactly the items on this dashboard. Refs are unambiguous across item
-     * types — news ids carry a {@code cc-}/{@code fallback-} prefix, the others are UUIDs —
-     * so a flat ref→vote map cannot collide.
+     * types — news ids carry a {@code cc-}/{@code fallback-} prefix, the AI Insight id is a
+     * UUID, and the meme id carries a {@code meme-} prefix — so a flat ref→vote map cannot
+     * collide.
      */
     private Map<String, Integer> loadVotes(
             UUID userId,
             List<NewsArticle> articles,
             UUID insightId,
-            UUID memeId
+            String memeId
     ) {
         List<String> refs = new ArrayList<>(articles.size() + 2);
         articles.forEach(article -> refs.add(article.id()));
         refs.add(insightId.toString());
-        refs.add(memeId.toString());
+        refs.add(memeId);
 
         return feedbackRepository.findByUserIdAndItemRefIn(userId, refs).stream()
                 .collect(Collectors.toMap(

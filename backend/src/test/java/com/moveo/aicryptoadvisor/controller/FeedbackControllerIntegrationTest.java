@@ -9,8 +9,10 @@ import com.moveo.aicryptoadvisor.dto.response.AuthResponse;
 import com.moveo.aicryptoadvisor.dto.response.DashboardResponse;
 import com.moveo.aicryptoadvisor.dto.response.FeedbackResponse;
 import com.moveo.aicryptoadvisor.entity.ContentType;
+import com.moveo.aicryptoadvisor.entity.Feedback;
 import com.moveo.aicryptoadvisor.entity.InvestorType;
 import com.moveo.aicryptoadvisor.entity.ItemType;
+import com.moveo.aicryptoadvisor.repository.FeedbackRepository;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -41,10 +43,14 @@ class FeedbackControllerIntegrationTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private FeedbackRepository feedbackRepository;
+
     @LocalServerPort
     private int port;
 
     private String token;
+    private UUID userId;
 
     private String onboardedUser() {
         if (token != null) {
@@ -54,6 +60,7 @@ class FeedbackControllerIntegrationTest {
         ResponseEntity<AuthResponse> register = restTemplate.postForEntity(
                 "/api/auth/register", new RegisterRequest(email, "Vote Tester", "Str0ngPass"), AuthResponse.class);
         token = register.getBody().token();
+        userId = register.getBody().user().id();
 
         restTemplate.exchange(
                 "/api/preferences", HttpMethod.PUT,
@@ -114,14 +121,19 @@ class FeedbackControllerIntegrationTest {
     void retractIsIdempotent() {
         onboardedUser();
         DashboardResponse before = dashboard();
-        String memeRef = before.meme().id().toString();
+        String memeRef = before.meme().id();
 
         assertThat(vote(ItemType.MEME, memeRef, 1).getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(retract("MEME", memeRef).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
         // Second delete: still 204, not 404 (specs.md §4.4).
         assertThat(retract("MEME", memeRef).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(dashboard().meme().userVote()).isNull();
+
+        // The meme is picked at random on every load (specs.md §7.3), so a later dashboard
+        // call is not guaranteed to show this same entry again — verify the retraction
+        // directly against the stored row instead of relying on a second random pick landing
+        // back on `memeRef`.
+        assertThat(feedbackRepository.findByUserIdAndItemTypeAndItemRef(userId, ItemType.MEME, memeRef)).isEmpty();
     }
 
     @Test
@@ -130,11 +142,19 @@ class FeedbackControllerIntegrationTest {
         DashboardResponse before = dashboard();
 
         vote(ItemType.AI_INSIGHT, before.aiInsight().id().toString(), 1);
-        vote(ItemType.MEME, before.meme().id().toString(), -1);
+        vote(ItemType.MEME, before.meme().id(), -1);
 
+        // The AI Insight is cached per user/day, so it's still the same item on reload.
         DashboardResponse after = dashboard();
         assertThat(after.aiInsight().userVote()).isEqualTo(1);
-        assertThat(after.meme().userVote()).isEqualTo(-1);
+
+        // The meme, by contrast, is picked at random on every load (specs.md §7.3) — `after`
+        // may well show a different entry than `before`, so verify the meme vote persisted
+        // directly rather than assuming the next random pick matches `before.meme()`.
+        Feedback memeVote = feedbackRepository
+                .findByUserIdAndItemTypeAndItemRef(userId, ItemType.MEME, before.meme().id())
+                .orElseThrow();
+        assertThat(memeVote.getVote()).isEqualTo((short) -1);
     }
 
     @Test

@@ -47,7 +47,7 @@ public record DashboardResponse(
     }
 
     public record Meme(
-            UUID id,
+            String id,
             String imageUrl,
             String caption,
             Integer userVote

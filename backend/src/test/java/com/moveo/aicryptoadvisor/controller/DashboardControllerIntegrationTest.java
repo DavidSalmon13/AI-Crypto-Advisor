@@ -10,7 +10,9 @@ import com.moveo.aicryptoadvisor.entity.ContentType;
 import com.moveo.aicryptoadvisor.entity.InvestorType;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +101,7 @@ class DashboardControllerIntegrationTest {
     }
 
     @Test
-    void dailyContentIsStableAcrossCallsOnTheSameDay() {
+    void aiInsightIsStableAcrossCallsOnTheSameDay() {
         String token = registerAndOnboard();
 
         DashboardResponse first = getDashboard(token).getBody();
@@ -109,8 +111,23 @@ class DashboardControllerIntegrationTest {
         assertThat(second).isNotNull();
         assertThat(second.aiInsight().id()).isEqualTo(first.aiInsight().id());
         assertThat(second.aiInsight().text()).isEqualTo(first.aiInsight().text());
-        assertThat(second.meme().id()).isEqualTo(first.meme().id());
-        assertThat(second.meme().caption()).isEqualTo(first.meme().caption());
+    }
+
+    @Test
+    void memeIsPickedFreshOnEachCall() {
+        String token = registerAndOnboard();
+
+        Set<String> memeIdsSeen = new HashSet<>();
+        for (int i = 0; i < 30; i++) {
+            DashboardResponse response = getDashboard(token).getBody();
+            assertThat(response).isNotNull();
+            assertThat(response.meme().id()).isNotBlank();
+            memeIdsSeen.add(response.meme().id());
+        }
+
+        // With a 25-entry pool and 30 draws, seeing only one distinct id would be an
+        // astronomically unlikely coincidence rather than the meme actually being cached.
+        assertThat(memeIdsSeen).as("meme should vary across dashboard loads").hasSizeGreaterThan(1);
     }
 
     @Test
