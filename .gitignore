@@ -31,3 +31,6 @@ npm-debug.log*
 
 # Original assignment brief (not part of the public deliverable per specs.md §1.2)
 *.docx
+
+# Claude Code local state
+.claude/
