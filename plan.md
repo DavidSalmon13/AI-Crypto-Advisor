@@ -14,7 +14,7 @@
 ## Flags — assumptions made to keep this plan concrete (not blocking, but worth a sanity check before/while executing)
 
 - **Git bootstrap**: the local folder has no `.git` and the GitHub repo is empty. Phase 0 does `git init`, sets the `origin` remote to the given URL, and makes the first commit — confirm this is desired (vs. you cloning the empty repo fresh and copying files in) before Phase 0 runs.
-- **API key acquisition is on the critical path**: CryptoPanic (Phase 5) and OpenRouter (Phase 5) both require free-tier signup for an API key *before* their respective steps can be verified end-to-end. Flagging so key signup isn't a last-minute blocker mid-phase.
+- **API key acquisition is on the critical path**: CryptoCompare (Phase 5) and OpenRouter (Phase 5) both require free-tier signup for an API key *before* their respective steps can be verified end-to-end. Flagging so key signup isn't a last-minute blocker mid-phase.
 - **`OPENROUTER_MODEL` drift**: specs.md pins `meta-llama/llama-3.1-8b-instruct:free` as the default. Free-model availability on OpenRouter changes over time — Phase 5's AI Insight step includes a check that the pinned model is still live, and swaps to another free model if not, without changing anything else in the design.
 - **Secrets locally**: backend uses `backend/.env` (loaded via `spring-dotenv` or Docker Compose `env_file`) — not committed; `backend/.env.example` documents required keys. Frontend uses `frontend/.env.local` (Vite convention) with `.env.example` counterpart. This mechanism isn't in specs.md and is filled in here as an implementation detail, not a spec change.
 
@@ -121,20 +121,20 @@
 **What**: The largest phase; build incrementally, section by section, per specs.md §4.3/§7.1–7.3, verifying each section's service in isolation before wiring the aggregating controller.
 
 1. **Coin Prices**: `CoinGeckoClient` (calls `/simple/price`), `CoinPriceService`. No caching (per spec, always live).
-2. **Market News**: `CryptoPanicClient`, `NewsService` with the 20-min in-memory cache (Spring `@Cacheable` + Caffeine) and `data/news-fallback.json` fallback on error/timeout. *Requires a CryptoPanic API key — acquire before this step (see Flags).*
+2. **Market News**: `CryptoCompareClient` (calls `min-api.cryptocompare.com/data/v2/news/`, field mapping per specs.md §4.3), `NewsService` with the 20-min in-memory cache (Spring `@Cacheable` + Caffeine) and `data/news-fallback.json` fallback on error/timeout. *Requires a CryptoCompare API key — acquire before this step (see Flags).*
 3. **AI Insight**: `daily_content` repository access, `OpenRouterClient`, `AiInsightService` implementing the try-insert-then-read cache pattern (specs.md §7.2) and the exact prompt template (§7.1), fallback text on failure. *Requires an OpenRouter API key — acquire before this step.*
 4. **Meme**: seed `data/memes.json` (25 entries), `MemeService` using the deterministic `hash(userId+date) mod 25` pick, same cache pattern as AI Insight.
 5. **Aggregation**: `DashboardController` (`GET /api/dashboard`) calling all 4 services plus a `Feedback` lookup to populate `userVote` on each item (Feedback entity/repository is introduced here as a read dependency; write endpoints come in Phase 6).
 
 Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsightSection`, `MemeSection` (read-only rendering, no vote buttons yet — those are Phase 6), `api/dashboardApi.ts`, TanStack Query hook `useDashboard`.
 
-**Files/components**: backend `client/{CoinGeckoClient,CryptoPanicClient,OpenRouterClient}.java`, `service/{CoinPriceService,NewsService,AiInsightService,MemeService,DashboardService}.java`, `entity/{DailyContent,Feedback}.java` + repositories, `controller/DashboardController.java`, `config/CacheConfig.java`, `data/{memes.json,news-fallback.json}`. Frontend `features/dashboard/*`, `api/dashboardApi.ts`.
+**Files/components**: backend `client/{CoinGeckoClient,CryptoCompareClient,OpenRouterClient}.java`, `service/{CoinPriceService,NewsService,AiInsightService,MemeService,DashboardService}.java`, `entity/{DailyContent,Feedback}.java` + repositories, `controller/DashboardController.java`, `config/CacheConfig.java`, `data/{memes.json,news-fallback.json}`. Frontend `features/dashboard/*`, `api/dashboardApi.ts`.
 
 **Depends on**: Phase 4 (dashboard needs a user's saved preferences to know which coins/tone to use).
 
 **Verify** (per sub-step, before moving to the next):
 1. Coin Prices: unit test or manual call confirms `CoinPriceService` returns correct shape for a known coin id; verify against 2-3 real coin ids.
-2. News: first call hits CryptoPanic (confirm via logs/network), second call within 20 min is served from cache (no outbound call — verify via a temporary log line or a cache-hit counter); kill network/point at a bad URL temporarily to confirm the fallback JSON is served instead of a 5xx.
+2. News: first call hits CryptoCompare (confirm via logs/network), second call within 20 min is served from cache (no outbound call — verify via a temporary log line or a cache-hit counter); kill network/point at a bad URL temporarily to confirm the fallback JSON is served instead of a 5xx.
 3. AI Insight: first `GET /api/dashboard` call for a user generates and persists a row in `daily_content`; a second call the same day returns the identical cached text (verify via DB query, not just API response, to confirm no duplicate insert — the unique constraint holds); force an API failure (bad key) to confirm the fallback text + `"fallback": true` path, not a 500.
 4. Meme: confirm the same user gets the same meme across repeated calls same-day, and (spot-check) a different simulated date/user yields a different pick.
 5. Aggregation: full `GET /api/dashboard` returns all 4 sections in the exact shape from specs.md §4.3, with `userVote: null` for everything (no votes exist yet).
