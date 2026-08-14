@@ -181,7 +181,7 @@ Frontend: `DashboardPage` + `CoinPricesSection`, `MarketNewsSection`, `AiInsight
 
 ## Phase 8 — Deployment
 
-**Status**: Not started
+**Status**: Done — backend `https://ai-crypto-advisor-production-24cc.up.railway.app`, frontend `https://stupendous-sunshine-b08de9.netlify.app`. Full flow verified live: register, preferences, dashboard (real prices/news/AI insight), vote, reload with vote persisted.
 
 **What**: Per specs.md §9. Railway: create project, attach Postgres plugin, set root dir `/backend`, set all env vars from §9.1's table, confirm healthcheck path. Netlify: set base dir `/frontend`, build command `npm run build`, publish dir `frontend/dist`, add `netlify.toml` SPA redirect, set `VITE_API_BASE_URL` to the live Railway URL. Update Railway's `FRONTEND_ORIGIN` to the live Netlify URL (circular dependency — Railway must be deployed first to get a URL for Netlify's env var, then Netlify's URL feeds back into Railway's CORS config, requiring one redeploy of the backend).
 
