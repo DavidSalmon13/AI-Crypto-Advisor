@@ -96,7 +96,7 @@ flowchart LR
 ```
 com.moveo.aicryptoadvisor
 ├── AiCryptoAdvisorApplication.java
-├── config/            (SecurityConfig, CorsConfig, WebClientConfig, CacheConfig)
+├── config/            (SecurityConfig, CorsConfig, RestClientConfig, CacheConfig)
 ├── security/           (JwtService, JwtAuthFilter, UserDetailsServiceImpl)
 ├── controller/          (AuthController, PreferencesController, DashboardController, FeedbackController)
 ├── service/             (AuthService, PreferenceService, DashboardService, AiInsightService, MemeService, NewsService, CoinPriceService, FeedbackService)
@@ -195,9 +195,10 @@ Response `200`:
     { "id": "cc-4821931", "title": "...", "url": "https://...", "source": "CoinDesk", "publishedAt": "2026-08-14T06:00:00Z", "userVote": null }
   ],
   "aiInsight": { "id": "uuid", "text": "...", "generatedAt": "2026-08-14T00:03:11Z", "fallback": false, "userVote": 1 },
-  "meme": { "id": "meme-014", "imageUrl": "https://...", "caption": "...", "userVote": null }
+  "meme": { "id": "uuid", "imageUrl": "https://...", "caption": "...", "userVote": null }
 }
 ```
+`aiInsight.id` and `meme.id` are both the `daily_content.id` UUID, not the id of the underlying pool entry — that is what makes them usable as `itemRef` (§4.4) and joinable back to the generated payload for §7.4. The meme pool's own id (`meme-014`) is carried inside `daily_content.payload.memeId` and is not exposed on the wire.
 `userVote` is `1`, `-1`, or `null` (no vote yet) — resolved server-side by joining `feedback` for the current user, so the frontend never has to reconcile vote state itself.
 
 Orchestration logic per section (exact, no ambiguity):
