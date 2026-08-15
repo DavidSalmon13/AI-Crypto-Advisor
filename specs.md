@@ -297,7 +297,7 @@ Migrations run automatically on backend boot (`spring.flyway.enabled=true`, defa
 ### 5.2 Static resource data (not DB tables)
 
 - `data/coins.json` — the 30-coin curated onboarding list (§4.2).
-- `data/memes.json` — 25 `{id, imageUrl, caption}` meme entries; fallback pool for when the live Reddit meme feed is unavailable (§7.3).
+- `data/memes.json` — 25 `{id, imageUrl, caption}` meme entries; fallback pool for when the live Reddit meme feed is unavailable (§7.3). `imageUrl` is a mix of imgflip's own hotlinked template URLs and root-relative paths (`/memes/*.jpg`) into `frontend/public/memes/` for a handful of real, self-hosted crypto photos (Unsplash-licensed, no attribution required) — the frontend serves the latter directly, no backend involvement.
 - `data/news-fallback.json` — 10 static `{id, title, url, source, publishedAt}` headlines, RSS-feed-outage fallback.
 
 These are read-only reference data seeded at application startup into in-memory beans (not persisted to Postgres) — they change only via a code deploy, never via runtime writes, so a DB table would add write-path complexity for no benefit.
