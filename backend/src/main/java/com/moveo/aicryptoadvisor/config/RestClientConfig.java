@@ -33,6 +33,14 @@ public class RestClientConfig {
                 .build();
     }
 
+    /** No base URL: {@code RedditMemeClient} calls the subreddit listing's absolute URL directly. */
+    @Bean
+    public RestClient redditRestClient(@Value("${app.reddit.timeout-seconds}") int timeoutSeconds) {
+        return RestClient.builder()
+                .requestFactory(requestFactory(timeoutSeconds))
+                .build();
+    }
+
     @Bean
     public RestClient openRouterRestClient(
             @Value("${app.openrouter.base-url}") String baseUrl,

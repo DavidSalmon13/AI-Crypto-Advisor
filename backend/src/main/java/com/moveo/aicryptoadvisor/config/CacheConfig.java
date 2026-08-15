@@ -14,9 +14,12 @@ public class CacheConfig {
     /** Server-wide (not per-user) market-news cache, TTL 20 minutes — specs.md §4.3. */
     public static final String MARKET_NEWS_CACHE = "marketNews";
 
+    /** Server-wide live Reddit meme pool, TTL 20 minutes — specs.md §7.3. */
+    public static final String REDDIT_MEMES_CACHE = "redditMemes";
+
     @Bean
     public CaffeineCacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(MARKET_NEWS_CACHE);
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(MARKET_NEWS_CACHE, REDDIT_MEMES_CACHE);
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(20))
                 .maximumSize(16));

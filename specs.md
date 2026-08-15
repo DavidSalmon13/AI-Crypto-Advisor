@@ -10,7 +10,7 @@ Repo: https://github.com/DavidSalmon13/AI-Crypto-Advisor (monorepo)
 
 A personalized crypto dashboard. A user registers, completes a one-time onboarding quiz (assets of interest, investor type, preferred content style), and lands on a **Daily Dashboard** with four sections: Coin Prices, Market News, AI Insight of the Day, and a Fun Crypto Meme. Every content item in News/AI Insight/Meme can be voted 👍/👎, and votes are persisted for a future recommendation model (not implemented in this assignment — see §7.4).
 
-The AI Insight is generated **once per user per calendar day (UTC)** and cached, not regenerated on every page load. The Meme is the exception — it's picked fresh from the static pool **on every dashboard load** (per the assignment's "shown dynamically each time the dashboard updates"), not cached.
+The AI Insight is generated **once per user per calendar day (UTC)** and cached, not regenerated on every page load. The Meme is the exception — it's picked fresh **on every dashboard load** (per the assignment's "shown dynamically each time the dashboard updates"), from a live Reddit-sourced pool (server-wide cached 20 minutes) with the static pool as a fallback — see §7.3.
 
 ### 1.1 Tech stack (final)
 
@@ -24,7 +24,7 @@ The AI Insight is generated **once per user per calendar day (UTC)** and cached,
 | AI | OpenRouter (free-tier model) |
 | Market data | CoinGecko public API |
 | News | Publisher RSS feeds (Cointelegraph, Decrypt — no key required) + static JSON fallback |
-| Memes | Static curated JSON (no live scraping) |
+| Memes | Reddit (r/CryptoCurrencyMemes, unauthenticated JSON listing, no key) + static curated JSON fallback |
 | Backend host | Railway (root dir `/backend`) |
 | Frontend host | Netlify (base dir `/frontend`) |
 | CI/CD | Native Railway + Netlify "deploy on push to `main`" — no separate GitHub Actions pipeline |
@@ -206,7 +206,7 @@ Orchestration logic per section (exact, no ambiguity):
 - **Coin Prices**: always live — calls CoinGecko `/simple/price?ids=<comma-joined interests>&vs_currencies=usd&include_24hr_change=true` on every request. No DB caching (price staleness is undesirable here). If the user has 0 interests saved (shouldn't happen given §4.2 validation), the array is empty.
 - **Market News**: server-wide (not per-user) in-memory cache, TTL 20 minutes — one shared cache entry for "general crypto news," refreshed lazily on the first request after expiry. Source: publisher RSS feeds — Cointelegraph (`https://cointelegraph.com/rss`) and Decrypt (`https://decrypt.co/feed`), no key required. CryptoPanic, CryptoCompare/CoinDesk Data, and CoinGecko's own News endpoint were evaluated first but all require a paid plan as of 2026-08; RSS is what these publishers already syndicate for free. Each feed is parsed and both are merged, newest-first. Field mapping: entry title → `title`, entry link → `url`, feed source name → `source`, entry published/updated date → `publishedAt` (ISO-8601 UTC); `id` is `"rss-" + sha256(url)[0:16]` since RSS carries no canonical numeric id. On a feed error/timeout (5s timeout) that feed is skipped, not fatal; if *all* feeds fail or return nothing, serve `backend/src/main/resources/data/news-fallback.json` (10 static headlines) and continue — never fail the whole dashboard call.
 - **AI Insight**: check `daily_content` for `(user_id, content_type='AI_INSIGHT', content_date=today UTC)`. Hit → return cached payload. Miss → call OpenRouter (see §7.1 for prompt), persist to `daily_content`, return. If OpenRouter call fails (timeout 10s, non-2xx, or malformed response), persist and return a static fallback insight with `"fallback": true` — never a 5xx to the client for this reason.
-- **Meme**: no caching — pick a random entry from the static 25-entry `memes.json` on every call and return it directly (its pool id, e.g. `meme-014`, doubles as `itemRef` for voting). Matches the assignment's "shown dynamically each time the dashboard updates"; unlike the AI Insight there's no idempotency requirement to preserve, so a plain random pick (not a deterministic hash) is simplest.
+- **Meme**: pick a random entry from a live pool on every call and return it directly (its id — `reddit-<postId>` or, on fallback, `meme-014` — doubles as `itemRef` for voting). The pool itself is Reddit's top image posts from r/CryptoCurrencyMemes, server-wide cached 20 minutes (same policy as Market News); on fetch failure or an empty result it falls back to the static 25-entry `memes.json`, and that miss is never cached so the feed is retried on the next call. Matches the assignment's "shown dynamically each time the dashboard updates"; unlike the AI Insight there's no idempotency requirement to preserve, so a plain random pick (not a deterministic hash) is simplest. See §7.3.
 
 ### 4.4 Feedback
 
@@ -215,7 +215,7 @@ Request:
 ```json
 { "itemType": "NEWS", "itemRef": "rss-4a1b2c3d4e5f6789", "vote": 1 }
 ```
-`itemType` ∈ `NEWS | AI_INSIGHT | MEME`. `itemRef` — for `NEWS` it's the `rss-`-prefixed article id (as returned in `marketNews[].id`); for `AI_INSIGHT` it's the `daily_content.id` UUID (as returned in `aiInsight.id`); for `MEME` it's the meme pool's own static id (as returned in `meme.id`, e.g. `meme-014`). `vote` ∈ `{1, -1}`.
+`itemType` ∈ `NEWS | AI_INSIGHT | MEME`. `itemRef` — for `NEWS` it's the `rss-`-prefixed article id (as returned in `marketNews[].id`); for `AI_INSIGHT` it's the `daily_content.id` UUID (as returned in `aiInsight.id`); for `MEME` it's whichever pool the pick came from (as returned in `meme.id`): a `reddit-`-prefixed Reddit post id from the live pool, or a static pool id like `meme-014` on fallback — see §7.3. `vote` ∈ `{1, -1}`.
 Server sets `item_date` = today (UTC) automatically; does not trust a client-supplied date.
 Response `200`: `{ "id": "uuid", "itemType": "NEWS", "itemRef": "rss-4a1b2c3d4e5f6789", "vote": 1 }`. Upsert is keyed on the unique constraint `(user_id, item_type, item_ref)` — a second call with a different `vote` value flips the existing row rather than creating a new one.
 
@@ -297,7 +297,7 @@ Migrations run automatically on backend boot (`spring.flyway.enabled=true`, defa
 ### 5.2 Static resource data (not DB tables)
 
 - `data/coins.json` — the 30-coin curated onboarding list (§4.2).
-- `data/memes.json` — 25 `{id, imageUrl, caption}` meme entries.
+- `data/memes.json` — 25 `{id, imageUrl, caption}` meme entries; fallback pool for when the live Reddit meme feed is unavailable (§7.3).
 - `data/news-fallback.json` — 10 static `{id, title, url, source, publishedAt}` headlines, RSS-feed-outage fallback.
 
 These are read-only reference data seeded at application startup into in-memory beans (not persisted to Postgres) — they change only via a code deploy, never via runtime writes, so a DB table would add write-path complexity for no benefit.
@@ -339,11 +339,15 @@ The cache key is `(user_id, content_type, content_date)` — it has no notion of
 
 ### 7.3 Meme selection
 
-Not AI-generated — a static, hand-curated pool (§5.2), one entry picked at random on every `GET /api/dashboard` call, per the assignment's "shown dynamically each time the dashboard updates." No caching, no per-user/per-day determinism needed: unlike the AI Insight there's no external API cost or idempotency requirement to protect, so `MemeService` is a stateless `SecureRandom` pick over the pool with no DB round-trip. Reddit scraping was considered and rejected (§ decision log — fragile, rate-limited, unnecessary risk for a graded demo).
+Not AI-generated — one entry picked at random on every `GET /api/dashboard` call, per the assignment's "shown dynamically each time the dashboard updates." No per-user/per-day determinism needed: unlike the AI Insight there's no idempotency requirement to protect, so `MemeService` is a stateless `SecureRandom` pick with no DB round-trip.
+
+**Source, revised 2026-08**: live top image posts from Reddit's public, unauthenticated JSON listing for r/CryptoCurrencyMemes (`RedditMemeClient`, no API key or OAuth registration) — filtered to non-NSFW image posts above a minimum score. The pool is cached server-wide for 20 minutes (`redditMemes` cache, same TTL/pattern as Market News §4.3), so a dashboard load isn't a live Reddit call every time. On any fetch failure, or if Reddit returns nothing usable, the static hand-curated pool (§5.2, `data/memes.json`) is served instead; that fallback result is deliberately not cached, so the next call retries the live feed instead of pinning the fallback for 20 minutes.
+
+Originally this section's decision log rejected Reddit scraping outright ("fragile, rate-limited, unnecessary risk for a graded demo"). That's revisited here: those risks are real, but the fallback-on-failure design means they degrade to added latency on a cache miss, never to a broken dashboard — the same safety net `NewsService` already relies on for its RSS feeds. `data/memes.json` stays in the repo unchanged as that fallback tier, not as a code change.
 
 ### 7.4 Bonus — using feedback for future model improvement (design only, not implemented)
 
-Every vote in `feedback` is a labeled example: `(user_id, item_type, item_ref, vote, item_date)`, joinable back to the user's `user_preferences`, and — for `AI_INSIGHT` — to the exact generated `payload` via `daily_content` (for `MEME`, `item_ref` is already the static pool id, so it joins directly against `memes.json`/the curated pool, no `daily_content` hop needed). That join produces a training row of the shape `(investorType, interests, contentTypes, generatedText/memeId, label ∈ {like, dislike})`.
+Every vote in `feedback` is a labeled example: `(user_id, item_type, item_ref, vote, item_date)`, joinable back to the user's `user_preferences`, and — for `AI_INSIGHT` — to the exact generated `payload` via `daily_content`. For `MEME`, `item_ref` is either a static pool id (`meme-014`, joins directly against `memes.json`) or a Reddit post id (`reddit-<postId>`, §7.3) — the latter isn't guaranteed to still resolve on Reddit by the time a batch export runs, since posts can be deleted; a future export should treat `item_ref` as an opaque label (paired with the vote) rather than assume it's always re-joinable to the source content. That join produces a training row of the shape `(investorType, interests, contentTypes, generatedText/memeId, label ∈ {like, dislike})`.
 
 Proposed offline pipeline (not built here):
 1. **Batch export** — a periodic job (outside the app, e.g. a notebook or a small script run manually) joins `feedback ⋈ daily_content ⋈ user_preferences` for AI Insight votes, and `feedback ⋈ user_preferences` (against the static meme pool) for Meme votes, into a flat dataset.
