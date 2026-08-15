@@ -1,12 +1,12 @@
 [
   {
     "id": "meme-001",
-    "imageUrl": "https://imgflip.com/s/meme/Confession-Bear.jpg",
+    "imageUrl": "/memes/chart-mountains.jpg",
     "caption": "Buying the top, again"
   },
   {
     "id": "meme-002",
-    "imageUrl": "https://imgflip.com/s/meme/Doge.jpg",
+    "imageUrl": "/memes/doge-dollar.jpg",
     "caption": "HODL through the dip"
   },
   {
@@ -36,12 +36,12 @@
   },
   {
     "id": "meme-008",
-    "imageUrl": "https://imgflip.com/s/meme/Creepy-Condescending-Wonka.jpg",
+    "imageUrl": "/memes/googly-eyes.jpg",
     "caption": "The chart is just resting"
   },
   {
     "id": "meme-009",
-    "imageUrl": "https://imgflip.com/s/meme/Oprah-You-Get-A.jpg",
+    "imageUrl": "/memes/coins-on-rails.jpg",
     "caption": "Rebalancing into more of the same"
   },
   {
@@ -71,7 +71,7 @@
   },
   {
     "id": "meme-015",
-    "imageUrl": "https://imgflip.com/s/meme/The-Rock-Driving.jpg",
+    "imageUrl": "/memes/trading-app.jpg",
     "caption": "Day trading on a Tuesday"
   },
   {
@@ -86,7 +86,7 @@
   },
   {
     "id": "meme-018",
-    "imageUrl": "https://imgflip.com/s/meme/UNO-Draw-25-Cards.jpg",
+    "imageUrl": "/memes/blockchain-nodes.jpg",
     "caption": "Airdrop hunting season"
   },
   {
@@ -96,12 +96,12 @@
   },
   {
     "id": "meme-020",
-    "imageUrl": "https://imgflip.com/s/meme/Epic-Handshake.jpg",
+    "imageUrl": "/memes/coin-pile.jpg",
     "caption": "Portfolio diversification: two coins"
   },
   {
     "id": "meme-021",
-    "imageUrl": "https://imgflip.com/s/meme/Ill-Just-Wait-Here.jpg",
+    "imageUrl": "/memes/balloons.jpg",
     "caption": "Waiting for the next halving"
   },
   {
@@ -121,7 +121,7 @@
   },
   {
     "id": "meme-025",
-    "imageUrl": "https://imgflip.com/s/meme/Laughing-Men-In-Suits.jpg",
+    "imageUrl": "/memes/coin-pedestals.jpg",
     "caption": "Long-term investor since Tuesday"
   }
 ]
