@@ -24,7 +24,7 @@ implemented — see [`specs.md` §7.4](specs.md)).
 | AI | OpenRouter (free-tier model) |
 | Market data | CoinGecko public API |
 | News | Publisher RSS feeds (Cointelegraph, Decrypt) + static JSON fallback |
-| Memes | Static curated JSON |
+| Memes | Reddit (r/CryptoCurrencyMemes, no key) + static curated JSON fallback |
 | CI | GitHub Actions — `mvn test` on every push/PR |
 | Deploy | Railway (backend) + Netlify (frontend), both deploy on push to `main` |
 

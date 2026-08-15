@@ -25,6 +25,9 @@ app:
     timeout-seconds: 5
   news:
     timeout-seconds: 5
+  reddit:
+    timeout-seconds: 5
+    listing-url: "https://www.reddit.com/r/CryptoCurrencyMemes/top.json?t=day&limit=25"
   openrouter:
     base-url: https://openrouter.ai/api/v1
     api-key: ${OPENROUTER_API_KEY:}

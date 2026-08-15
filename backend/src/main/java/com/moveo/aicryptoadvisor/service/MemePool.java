@@ -2,6 +2,7 @@ package com.moveo.aicryptoadvisor.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moveo.aicryptoadvisor.client.Meme;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -11,13 +12,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * The curated static meme pool (specs.md §5.2), loaded once at startup from data/memes.json.
- * Hand-curated rather than scraped — see specs.md §7.3.
+ * Serves as {@code MemeService}'s fallback when the live Reddit meme feed is unavailable.
  */
 @Component
 public class MemePool {
-
-    public record Meme(String id, String imageUrl, String caption) {
-    }
 
     private final List<Meme> memes;
 
@@ -29,19 +27,11 @@ public class MemePool {
             throw new UncheckedIOException("Failed to load data/memes.json", e);
         }
         if (memes.isEmpty()) {
-            throw new IllegalStateException("data/memes.json is empty — the daily meme pick needs at least one entry");
+            throw new IllegalStateException("data/memes.json is empty — the fallback meme pick needs at least one entry");
         }
     }
 
     public List<Meme> getMemes() {
         return memes;
-    }
-
-    public int size() {
-        return memes.size();
-    }
-
-    public Meme get(int index) {
-        return memes.get(index);
     }
 }

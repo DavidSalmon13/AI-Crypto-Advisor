@@ -20,7 +20,7 @@ Full technical specification: **`specs.md`**. Phased build plan and current buil
 | AI | OpenRouter (free-tier model, default `poolside/laguna-xs-2.1:free`) |
 | Market data | CoinGecko public API |
 | News | Publisher RSS feeds (Cointelegraph, Decrypt — no key required) + static JSON fallback on failure |
-| Memes | Static curated JSON (no live scraping) |
+| Memes | Reddit (r/CryptoCurrencyMemes, unauthenticated JSON listing, no key) + static curated JSON fallback |
 | Backend host | Railway (root dir `/backend`) |
 | Frontend host | Netlify (base dir `/frontend`) |
 | CI | GitHub Actions — test-only (`mvn test`), separate from deploy |
@@ -92,7 +92,7 @@ routes/       AppRouter.tsx
 
 ### Secrets / environment
 
-- Backend: `backend/.env` (git-ignored), documented in `backend/.env.example`. Required keys: `DATABASE_URL`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `FRONTEND_ORIGIN`. News uses public RSS feeds and needs no key.
+- Backend: `backend/.env` (git-ignored), documented in `backend/.env.example`. Required keys: `DATABASE_URL`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `FRONTEND_ORIGIN`. News uses public RSS feeds and needs no key; the meme feed uses Reddit's public JSON listing endpoint and needs no key either.
 - Frontend: `frontend/.env.local` (git-ignored, Vite convention), documented in `frontend/.env.example`. Required key: `VITE_API_BASE_URL`.
 - Never commit real keys/secrets; only `.env.example` files are tracked.
 
